@@ -10,7 +10,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # ==================== CONFIGURATION ====================
 TELEGRAM_TOKEN = "8715483326:AAFpjWbzwYLu_3vUuJSzJCJOkyYqmLcMJYI"
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY")
-ADMIN_ID = 123456789  # Remplace par TON ID TELEGRAM (trouvé avec @userinfobot)
+ADMIN_ID = 7919997259  # Remplace par TON ID TELEGRAM (trouvé avec @userinfobot)
 
 # ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
