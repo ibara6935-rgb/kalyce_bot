@@ -18,6 +18,7 @@ DB_NAME = "transactions.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # Crée la table si elle n'existe pas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
