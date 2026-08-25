@@ -20,24 +20,20 @@ def run_web_server():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-# Lancer le serveur web dans un thread séparé (ne bloque pas le bot)
 thread = threading.Thread(target=run_web_server)
 thread.start()
 
-# ==================== CONFIGURATION (CLÉS INTÉGRÉES) ====================
-# TOKEN TELEGRAM (bot @kalyce_pro_bot)
-TELEGRAM_TOKEN = "8789308928:AAGK5SAdnHNgqUttISRbjDQaGUCw7XlA26gt"
+# ==================== CONFIGURATION ====================
+# ✅ BOT : @kalyce_bot
+TELEGRAM_TOKEN = "8789308928:AAGK5SAdNHNqUttISRbJDQaGUCw7X1A26gt"
+BOT_URL = "https://t.me/kalyce_bot"
 
-# TOKEN API CRYPTO PAY (généré via @CryptoBot → Crypto Pay → Create App)
-CRYPTOBOT_API_KEY = "626590:AAuu6bMH2SfJPYJQTjFILTpeeWqQPp4BYe9"
+# 🔑 JETON CRYPTO PAY (valide)
+CRYPTOBOT_API_KEY = "626619:AAQqkYnFGdJeMJF7KrS3NN1CwxGQqC17YHU"
 
-# ADMIN ID (ton ID Telegram)
+# 📌 ADMIN ID
 ADMIN_ID = 7919997259
 
-# LIEN DU BOT (pour les factures)
-BOT_URL = "https://t.me/kalyce_pro_bot"
-
-# ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
 
 def init_db():
@@ -51,7 +47,6 @@ def init_db():
             montant REAL,
             date TEXT,
             statut TEXT,
-            hash_transaction TEXT,
             invoice_id TEXT
         )
     """)
@@ -86,7 +81,7 @@ def get_all_transactions():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, client_username, client_id, montant, date, statut, hash_transaction
+        SELECT id, client_username, client_id, montant, date, statut
         FROM transactions
         ORDER BY id DESC
     """)
@@ -94,9 +89,7 @@ def get_all_transactions():
     conn.close()
     return rows
 
-# ==================== FONCTION CRYPTO PAY ====================
 def create_cryptobot_invoice(amount, description="Achat USDT"):
-    """Crée une facture via l'API Crypto Pay de @CryptoBot."""
     url = "https://pay.crypt.bot/api/createInvoice"
     payload = {
         "asset": "USDT",
@@ -112,26 +105,25 @@ def create_cryptobot_invoice(amount, description="Achat USDT"):
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
-        return response.json().get("result", {})
+        result = response.json().get("result")
+        return result
     except Exception as e:
         logging.error(f"Erreur CryptoBot: {e}")
         return None
 
-# ==================== COMMANDES TELEGRAM ====================
 logging.basicConfig(level=logging.INFO)
 
 DISCLAIMER = """
 ⚠️ *Avertissement légal*
 Ce bot est fourni "en l'état", sans garantie d'aucune sorte.
-L'utilisation de ce bot est à vos propres risques.
 """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"🤖 *Bot Kalyce - Vente USDT*\n\n{DISCLAIMER}\n\n"
-        "Commandes disponibles :\n"
-        "/invoice [montant] - Créer une facture USDT\n"
-        "/status - Voir ton solde\n"
+        "Commandes :\n"
+        "/invoice [montant] - Créer une facture\n"
+        "/status - Solde\n"
         "/history - Historique (admin)\n"
         "/export - Exporter CSV (admin)\n"
         "/help - Aide",
@@ -140,12 +132,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🆘 *Aide*\n\n"
         "/invoice [montant] - Créer une facture\n"
-        "/status - Voir ton solde USDT\n"
+        "/status - Solde\n"
         "/history - Historique (admin)\n"
-        "/export - Exporter CSV (admin)\n"
-        "/help - Cette aide",
+        "/export - Exporter CSV (admin)",
         parse_mode="Markdown"
     )
 
@@ -158,7 +148,7 @@ async def create_invoice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         invoice_data = create_cryptobot_invoice(montant)
         if not invoice_data:
-            await update.message.reply_text("❌ Erreur lors de la création de la facture. Vérifie la clé API.")
+            await update.message.reply_text("❌ Erreur facture. Vérifie la clé API ou réessaie.")
             return
 
         invoice_id = invoice_data.get("invoice_id")
@@ -177,67 +167,49 @@ async def create_invoice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Utilisation : /invoice [montant] (ex: /invoice 100)")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "📊 *Solde USDT*\n\n"
-        "Cette fonctionnalité sera bientôt disponible. "
-        "Pour l'instant, connecte-toi à @CryptoBot pour voir ton solde.",
-        parse_mode="Markdown"
-    )
+    await update.message.reply_text("📊 Solde : connecte-toi à @CryptoBot.")
 
 async def history(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id != ADMIN_ID:
-        await update.message.reply_text("⛔ Commande réservée à l'administrateur.")
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Admin uniquement.")
         return
-
     transactions = get_history(10)
     if not transactions:
-        await update.message.reply_text("📭 Aucune transaction enregistrée.")
+        await update.message.reply_text("📭 Aucune transaction.")
         return
-
-    message = "📋 *Historique des transactions (10 dernières)*\n\n"
+    message = "📋 *Historique*\n\n"
     for t in transactions:
-        message += f"ID: {t[0]} | Client: {t[1]} | Montant: {t[2]} USDT | Date: {t[3]} | Statut: {t[4]}\n"
-
+        message += f"ID: {t[0]} | {t[1]} | {t[2]} USDT | {t[3]} | {t[4]}\n"
     await update.message.reply_text(message, parse_mode="Markdown")
 
 async def export_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id != ADMIN_ID:
-        await update.message.reply_text("⛔ Commande réservée à l'administrateur.")
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Admin uniquement.")
         return
-
     transactions = get_all_transactions()
     if not transactions:
-        await update.message.reply_text("📭 Aucune transaction à exporter.")
+        await update.message.reply_text("📭 Aucune donnée.")
         return
-
     filename = f"transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["ID", "Client", "ID Client", "Montant", "Date", "Statut", "Hash"])
+        writer.writerow(["ID", "Client", "ID Client", "Montant", "Date", "Statut"])
         writer.writerows(transactions)
-
     with open(filename, "rb") as f:
         await update.message.reply_document(document=f, filename=filename)
-
     os.remove(filename)
 
-# ==================== LANCEMENT ====================
 def main():
     init_db()
-    logging.info("✅ Base de données initialisée.")
-
+    logging.info("✅ Base OK")
     application = Application.builder().token(TELEGRAM_TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help))
     application.add_handler(CommandHandler("invoice", create_invoice))
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("history", history))
     application.add_handler(CommandHandler("export", export_transactions))
-
-    logging.info("🤖 Bot Kalyce lancé avec succès !")
+    logging.info("🤖 Bot Kalyce lancé")
     application.run_polling()
 
 if __name__ == "__main__":
