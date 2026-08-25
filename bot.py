@@ -3,14 +3,35 @@ import logging
 import sqlite3
 import csv
 import requests
+import threading
 from datetime import datetime
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+# ==================== SERVEUR WEB (KEEP-ALIVE) ====================
+app = Flask(__name__)
+
+@app.route('/')
+def keep_alive():
+    return "Bot is alive!", 200
+
+def run_web_server():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+# Lancer le serveur web dans un thread séparé
+thread = threading.Thread(target=run_web_server)
+thread.start()
+
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = "8715483326:AAFpjWbzwYLu_3vUuJSzJCJOkyYqmLcMJYI"
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY")
-ADMIN_ID = 7919997259  # Remplace par TON ID TELEGRAM (trouvé avec @userinfobot)
+ADMIN_ID = 7919997259  # Ton ID Telegram
+
+if not TELEGRAM_TOKEN:
+    raise ValueError("❌ TELEGRAM_TOKEN manquant")
+if not CRYPTOBOT_API_KEY:
+    raise ValueError("❌ CRYPTOBOT_API_KEY manquant")
 
 # ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
@@ -18,7 +39,6 @@ DB_NAME = "transactions.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Crée la table si elle n'existe pas
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,14 +92,13 @@ def get_all_transactions():
 
 # ==================== FONCTION CRYPTOBOT ====================
 def create_cryptobot_invoice(amount, description="Achat USDT"):
-    """Crée une facture via l'API de CryptoBot."""
     url = "https://pay.crypt.bot/api/createInvoice"
     payload = {
         "asset": "USDT",
         "amount": str(amount),
         "description": description,
         "paid_btn_name": "openBot",
-        "paid_btn_url": "https://t.me/kalyce_bot"
+        "paid_btn_url": "https://t.me/kalyce_usdt_bot"
     }
     headers = {
         "Crypto-Pay-API-Token": CRYPTOBOT_API_KEY,
@@ -135,7 +154,6 @@ async def create_invoice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         client_username = user.username or "pas de pseudo"
         client_id = user.id
 
-        # Créer la facture via CryptoBot
         invoice_data = create_cryptobot_invoice(montant)
         if not invoice_data:
             await update.message.reply_text("❌ Erreur lors de la création de la facture. Vérifie la clé API.")
@@ -144,7 +162,6 @@ async def create_invoice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         invoice_id = invoice_data.get("invoice_id")
         pay_url = invoice_data.get("pay_url")
 
-        # Enregistrer dans la base de données
         add_transaction(client_username, client_id, montant, invoice_id)
 
         await update.message.reply_text(
@@ -206,29 +223,20 @@ async def export_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # ==================== LANCEMENT ====================
 def main():
-    # Vérifier que les variables d'environnement sont définies
-    if not TELEGRAM_TOKEN:
-        logging.error("❌ TELEGRAM_TOKEN manquant. Configure la variable d'environnement.")
-        return
-    if not CRYPTOBOT_API_KEY:
-        logging.error("❌ CRYPTOBOT_API_KEY manquante. Configure la variable d'environnement.")
-        return
-
     init_db()
     logging.info("✅ Base de données initialisée.")
 
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help))
-    app.add_handler(CommandHandler("invoice", create_invoice))
-    app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("history", history))
-    app.add_handler(CommandHandler("export", export_transactions))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help))
+    application.add_handler(CommandHandler("invoice", create_invoice))
+    application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("history", history))
+    application.add_handler(CommandHandler("export", export_transactions))
 
     logging.info("🤖 Bot Kalyce lancé avec succès !")
-    app.run_polling()
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
-
