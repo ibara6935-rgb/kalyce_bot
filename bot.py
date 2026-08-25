@@ -24,11 +24,10 @@ thread = threading.Thread(target=run_web_server)
 thread.start()
 
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = "8969625114:AAGCglmq9L_Qa24AvftRdtkl7YeRXdyRB4w"  # 
+TELEGRAM_TOKEN = "8789308928:AAGK5SAdnHNgqUttISRbjDQaGUCw7XlA26g"  # 
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "en_attente")
 ADMIN_ID = 7919997259
 
-# ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
 
 def init_db():
@@ -92,7 +91,7 @@ def create_cryptobot_invoice(amount, description="Achat USDT"):
         "amount": str(amount),
         "description": description,
         "paid_btn_name": "openBot",
-        "paid_btn_url": "https://t.me/kalyce_services_bot"
+        "paid_btn_url": "https://t.me/TON_BOT_USERNAME"  # REMPLACE PAR LE LIEN DE TON BOT
     }
     headers = {
         "Crypto-Pay-API-Token": CRYPTOBOT_API_KEY,
