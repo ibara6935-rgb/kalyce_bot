@@ -25,7 +25,7 @@ thread = threading.Thread(target=run_web_server)
 thread.start()
 
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw"")
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY")
 ADMIN_ID = 7919997259  # Ton ID Telegram
 
