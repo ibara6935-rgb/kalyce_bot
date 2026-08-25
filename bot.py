@@ -26,7 +26,7 @@ thread.start()
 
 # ==================== CONFIGURATION (CLÉS INTÉGRÉES) ====================
 # TOKEN TELEGRAM (bot @kalyce_pro_bot)
-TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw"
+TELEGRAM_TOKEN = "https://web.telegram.org/k/#@Kalyce_bot"
 
 # TOKEN API CRYPTO PAY (généré via @CryptoBot → Crypto Pay → Create App)
 CRYPTOBOT_API_KEY = "626590:AAuu6bMH2SfJPYJQTjFILTpeeWqQPp4BYe9"
