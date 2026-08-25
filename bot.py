@@ -24,7 +24,7 @@ thread = threading.Thread(target=run_web_server)
 thread.start()
 
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw"  # ✅ BON TOKEN
+TELEGRAM_TOKEN = "8969625114:AAGCglmq9L_Qa24AvftRdtkl7YeRXdyRB4w"  # 
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "en_attente")
 ADMIN_ID = 7919997259
 
