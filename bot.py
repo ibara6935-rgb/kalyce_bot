@@ -24,10 +24,11 @@ thread = threading.Thread(target=run_web_server)
 thread.start()
 
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = "8733705622:AAF4d_qQ-v0URqk8OTJp7MP_ZfYsMr468Yg"
+TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw"  # ✅ BON TOKEN
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "en_attente")
 ADMIN_ID = 7919997259
 
+# ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
 
 def init_db():
