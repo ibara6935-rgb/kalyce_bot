@@ -9,7 +9,7 @@ from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# ==================== SERVEUR WEB (KEEP-ALIVE) ====================
+# ==================== SERVEUR WEB (POUR RAILWAY) ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,9 +17,10 @@ def keep_alive():
     return "Bot is alive!", 200
 
 def run_web_server():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    port = int(os.environ.get('PORT', 8080))  # Railway utilise le port 8080 par défaut
+    app.run(host='0.0.0.0', port=port)
 
-# Lancer le serveur web dans un thread séparé
+# Lancer le serveur web dans un thread séparé (ne bloque pas le bot)
 thread = threading.Thread(target=run_web_server)
 thread.start()
 
