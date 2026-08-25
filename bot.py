@@ -17,31 +17,25 @@ def keep_alive():
     return "Bot Kalyce est en ligne !", 200
 
 def run_web_server():
-    port = int(os.environ.get('PORT', 8080))  # Railway attribue un port dynamique
+    port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-# Lancer le serveur web dans un thread séparé (ne bloque pas le bot)
 thread = threading.Thread(target=run_web_server)
 thread.daemon = True
 thread.start()
 
 # ==================== CONFIGURATION ====================
-# ✅ BOT : @kalyce_bot
-TELEGRAM_TOKEN = "8955250253:AAFVZWHr5rOs-wefbAqBdu8kqKvRP3fQolU"
-BOT_URL = "https://t.me/kalyce_bot"
-ADMIN_ID = 7919997259  # Ton ID Telegram
+# ✅ BOT : @kalyce_officiel_bot
+TELEGRAM_TOKEN = "8955250253:AAFVZWHr5rOs-wefbAqBdu8kqKvRP3fQolU"  # À vérifier si c'est le bon token
+BOT_URL = "https://t.me/kalyce_officiel_bot"
+ADMIN_ID = 7919997259
 
-# 🔑 Jeton Crypto Pay (optionnel, si tu veux l'automatisation)
 CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "626619:AAQqkYnFGdJeMJF7KrS3NN1CwxGQqC17YHU")
+MODE = "auto"  # ou "manuel"
 
-# ⚙️ MODE : "auto" ou "manuel"
-#  - "auto" : utilise l'API Crypto Pay (nécessite un jeton valide)
-#  - "manuel" : affiche un lien fixe vers @CryptoBot (pas d'API)
-MODE = "auto"  # Mets "manuel" si tu veux éviter les erreurs d'API
-
-# ==================== BASE DE DONNÉES ====================
 DB_NAME = "transactions.db"
 
+# ==================== BASE DE DONNÉES ====================
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -97,7 +91,6 @@ def get_all_transactions():
 
 # ==================== FONCTION CRYPTO PAY ====================
 def create_cryptobot_invoice(amount, description="Achat USDT"):
-    """Crée une facture via l'API Crypto Pay."""
     url = "https://pay.crypt.bot/api/createInvoice"
     payload = {
         "asset": "USDT",
@@ -113,8 +106,7 @@ def create_cryptobot_invoice(amount, description="Achat USDT"):
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
-        result = response.json().get("result")
-        return result
+        return response.json().get("result")
     except Exception as e:
         logging.error(f"Erreur CryptoBot: {e}")
         return None
@@ -155,41 +147,32 @@ async def create_invoice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         client_username = user.username or "pas de pseudo"
         client_id = user.id
 
-        # Mode automatique
         if MODE == "auto":
             invoice_data = create_cryptobot_invoice(montant)
             if not invoice_data:
-                await update.message.reply_text(
-                    "❌ Erreur lors de la création de la facture.\n"
-                    "Vérifie la clé API ou passe en mode manuel (MODE = 'manuel')."
-                )
+                await update.message.reply_text("❌ Erreur facture. Vérifie la clé API.")
                 return
-
             invoice_id = invoice_data.get("invoice_id")
             pay_url = invoice_data.get("pay_url")
-
             add_transaction(client_username, client_id, montant, invoice_id)
-
             await update.message.reply_text(
                 f"💰 *Facture USDT créée !*\n\n"
                 f"Montant : {montant} USDT\n"
-                f"Lien de paiement : [Clique ici pour payer]({pay_url})\n\n"
-                f"Envoie ce lien à ton client.",
+                f"Lien : [Clique ici pour payer]({pay_url})",
                 parse_mode="Markdown"
             )
-        # Mode manuel (sans API)
         else:
-            lien_paiement = f"https://t.me/CryptoBot?start=invoice_{montant}"
+            lien = f"https://t.me/CryptoBot?start=invoice_{montant}"
             add_transaction(client_username, client_id, montant, "manuel")
             await update.message.reply_text(
-                f"💰 *Facture USDT (mode manuel)*\n\n"
+                f"💰 *Facture USDT (manuel)*\n\n"
                 f"Montant : {montant} USDT\n"
-                f"Lien de paiement : [Clique ici pour payer]({lien_paiement})\n\n"
-                f"⚠️ Après paiement, préviens l'administrateur.",
+                f"Lien : [Clique ici pour payer]({lien})\n"
+                f"⚠️ Préviens l'admin après paiement.",
                 parse_mode="Markdown"
             )
     except (IndexError, ValueError):
-        await update.message.reply_text("Utilisation : /invoice [montant] (ex: /invoice 100)")
+        await update.message.reply_text("Utilisation : /invoice [montant]")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📊 Solde : connecte-toi à @CryptoBot.")
@@ -202,10 +185,10 @@ async def history(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not transactions:
         await update.message.reply_text("📭 Aucune transaction.")
         return
-    message = "📋 *Historique des transactions (10 dernières)*\n\n"
+    msg = "📋 *Historique*\n\n"
     for t in transactions:
-        message += f"ID: {t[0]} | {t[1]} | {t[2]} USDT | {t[3]} | {t[4]}\n"
-    await update.message.reply_text(message, parse_mode="Markdown")
+        msg += f"ID: {t[0]} | {t[1]} | {t[2]} USDT | {t[3]} | {t[4]}\n"
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def export_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -213,7 +196,7 @@ async def export_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     transactions = get_all_transactions()
     if not transactions:
-        await update.message.reply_text("📭 Aucune donnée à exporter.")
+        await update.message.reply_text("📭 Aucune donnée.")
         return
     filename = f"transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     with open(filename, "w", newline="", encoding="utf-8") as f:
@@ -224,22 +207,18 @@ async def export_transactions(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_document(document=f, filename=filename)
     os.remove(filename)
 
-# ==================== LANCEMENT ====================
 def main():
     init_db()
-    logging.info("✅ Base de données initialisée.")
+    logging.info("✅ Base OK")
     logging.info(f"📌 Mode : {MODE}")
-
     application = Application.builder().token(TELEGRAM_TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help))
     application.add_handler(CommandHandler("invoice", create_invoice))
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("history", history))
     application.add_handler(CommandHandler("export", export_transactions))
-
-    logging.info("🤖 Bot Kalyce lancé avec succès !")
+    logging.info("🤖 Bot Kalyce lancé")
     application.run_polling()
 
 if __name__ == "__main__":
