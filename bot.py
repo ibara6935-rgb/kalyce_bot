@@ -9,7 +9,7 @@ from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# ==================== SERVEUR WEB (POUR RAILWAY) ====================
+# ==================== SERVEUR WEB (POUR RENDER) ====================
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,16 +17,16 @@ def keep_alive():
     return "Bot is alive!", 200
 
 def run_web_server():
-    port = int(os.environ.get('PORT', 8080))  # Railway utilise le port 8080 par défaut
+    port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-# Lancer le serveur web dans un thread séparé (ne bloque pas le bot)
+# Lancer le serveur web dans un thread séparé
 thread = threading.Thread(target=run_web_server)
 thread.start()
 
 # ==================== CONFIGURATION ====================
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw")
-CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY")
+TELEGRAM_TOKEN = "8962252323:AAHHkgXUeMwOAGcLEg1Y02C4DitBHOY21Hw"
+CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "en_attente")
 ADMIN_ID = 7919997259  # Ton ID Telegram
 
 if not TELEGRAM_TOKEN:
@@ -99,7 +99,7 @@ def create_cryptobot_invoice(amount, description="Achat USDT"):
         "amount": str(amount),
         "description": description,
         "paid_btn_name": "openBot",
-        "paid_btn_url": "https://t.me/kalyce_usdt_bot"
+        "paid_btn_url": "https://t.me/kalyce_services_bot"
     }
     headers = {
         "Crypto-Pay-API-Token": CRYPTOBOT_API_KEY,
