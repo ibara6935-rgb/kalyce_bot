@@ -25,7 +25,6 @@ thread.start()
 
 # ==================== CONFIGURATION ====================
 TELEGRAM_TOKEN = "8789308928:AAGK5SAdnHNgqUttISRbjDQaGUCw7XlA26g"  # 
-CRYPTOBOT_API_KEY = os.getenv("CRYPTOBOT_API_KEY", "en_attente")
 ADMIN_ID = 7919997259
 
 DB_NAME = "transactions.db"
